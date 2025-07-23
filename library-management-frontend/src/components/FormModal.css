@@ -1,0 +1,162 @@
+/* Form Modal Styles */
+.form-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+  padding: 1rem; /* Add padding to prevent edge cutting */
+  box-sizing: border-box; /* Ensure padding is included in calculations */
+
+}
+
+.form-modal-container {
+  position: relative;
+  width: 100%;
+  max-width: 90vw; /* Use max-width instead of width */
+  max-height: calc(100vh - 2rem); /* Account for backdrop padding */
+  overflow-y: auto;
+  animation: modalSlideIn 0.3s ease-out;
+  margin: 0 auto; /* Center the container */
+  box-sizing: border-box; /* Ensure proper box model */
+}
+
+.form-modal-container.form-modal-small {
+  max-width: min(400px, 90vw)
+}
+
+.form-modal-container.form-modal-medium {
+  max-width: min(600px, 90vw);
+}
+
+.form-modal-container.form-modal-large {
+  max-width: min(800px, 90vw);
+}
+
+.form-modal-content {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+
+.form-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem 2rem;
+  border-bottom: 2px solid #f3f4f6;
+  background: #f9fafb;
+}
+
+.form-modal-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.form-modal-close {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.form-modal-close:hover {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.form-modal-close:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.form-modal-body {
+  padding: 2rem;
+  max-height: calc(90vh - 140px);
+  overflow-y: auto;
+}
+
+/* Animation */
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+  .form-modal-backdrop {
+    padding: 0.5rem; /* Reduce padding on mobile */
+  }
+  
+  .form-modal-container {
+    width: 100%;
+    max-width: calc(100vw - 1rem); /* Account for reduced padding */
+    margin: 0;
+  }
+
+  .form-modal-header {
+    padding: 1rem 1.5rem;
+  }
+
+  .form-modal-body {
+    padding: 1.5rem;
+  }
+
+  .form-modal-title {
+    font-size: 1.25rem;
+  }
+
+  .form-modal-close {
+    font-size: 1.5rem;
+    width: 28px;
+    height: 28px;
+  }
+}
+
+/* Scrollbar Styling */
+.form-modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.form-modal-body::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.form-modal-body::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.form-modal-body::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Focus management */
+.form-modal-backdrop:focus {
+  outline: none;
+}
