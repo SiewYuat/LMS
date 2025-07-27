@@ -2,7 +2,7 @@
 
 .book-catalog {
   min-height: 100vh;
-  background: linear-gradient(135deg, #8888e4 0%, #764ba2 100%);
+  background: linear-gradient(135deg, rgb(248, 246, 246) 0%, #764ba2 100%);
   padding: 2rem 0;
 }
 
@@ -27,11 +27,12 @@
 .catalog-header p {
   font-size: 1.2rem;
   opacity: 0.9;
+  color: black;
 }
 
 /* Search and Filters */
 .search-section {
-  background: rgb(247, 234, 234);
+  background: rgb(249, 242, 242);
   padding: 2rem;
   border-radius: 12px;
   margin-bottom: 2rem;
@@ -45,7 +46,7 @@
 .search-input-group {
   display: flex;
   gap: 0.5rem;
-  max-width: 600px;
+  max-width: 800px;
   margin: 0 auto;
 }
 
@@ -59,7 +60,8 @@
 }
 
 .search-input {
-  flex: 1;
+  flex: 2;
+  min-width: 350px;
   padding: 0.75rem 1rem;
   border: 2px solid #e2e8f0;
   border-radius: 8px;
@@ -129,7 +131,7 @@
 .results-summary {
   margin-bottom: 2rem;
   text-align: center;
-  color: white;
+  color: black;
   font-size: 1.1rem;
 }
 

@@ -58,10 +58,10 @@ const Navbar = () => {
           </li>
 
           {/* Authenticated User Links */}
-          {isAuthenticated ? (
+          {isAuthenticated && user ? (
             <>
               {/* Member Links */}
-              {user?.userType === 'MEMBER' && (
+              {user.userType === 'MEMBER' && (
                 <>
                   <li className="nav-item">
                     <Link to="/dashboard" className="nav-link" onClick={closeMenu}>
@@ -82,7 +82,7 @@ const Navbar = () => {
               )}
 
               {/* Admin Links */}
-              {user?.userType === 'ADMIN' && (
+              {user.userType === 'ADMIN' && (
                 <>
                   <li className="nav-item">
                     <Link to="/admin/dashboard" className="nav-link" onClick={closeMenu}>
@@ -130,7 +130,7 @@ const Navbar = () => {
               {/* User Profile Dropdown */}
               <li className="nav-item dropdown">
                 <span className="nav-link dropdown-toggle">
-                  👤 {user?.fullName || user?.username}
+                  👤 {user.fullName || user.username}
                 </span>
                 <ul className="dropdown-menu">
                   <li>

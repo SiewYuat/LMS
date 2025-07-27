@@ -23,9 +23,9 @@ const Home = () => {
         
         // Set some sample stats (you can implement these endpoints in backend)
         setStats({
-          totalBooks: 15250,
-          totalMembers: 752,
-          activeLoans: 3521
+          totalBooks: 152523,
+          totalMembers: 4752,
+          activeLoans: 2521
         })
       } catch (error) {
         console.error('Error fetching home data:', error)

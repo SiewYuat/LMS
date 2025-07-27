@@ -11,6 +11,8 @@ const BorrowHistory = () => {
   const [sortBy, setSortBy] = useState('borrowDate'); // borrowDate, dueDate, returnDate
   const [sortOrder, setSortOrder] = useState('desc'); // asc, desc
   const { user } = useAuth();
+  const overdueBooks = borrowHistory.filter(b => b.status === 'OVERDUE');
+  const hasOverdueBooks = overdueBooks.length > 0;
 
   useEffect(() => {
     if (user?.id) {
@@ -51,18 +53,50 @@ const BorrowHistory = () => {
     }
   };
 
-  const handleRenewBook = async (borrowId) => {
-    try {
+const handleRenewBook = async (borrowId) => {
+      // ADD THIS CONFIRMATION DIALOG:
+      const borrowItem = borrowHistory.find(b => b.borrowId === borrowId)
+      const confirmRenew = window.confirm(
+      `Are you sure you want to renew "${borrowItem?.bookTitle || 'this book'}"?\n\n` +
+      `This will extend your due date by another 21 days.`
+  )
+
+  if (!confirmRenew) {
+    return
+  }
+  
+  
+  try {
       await borrowService.renewBook(borrowId);
       await fetchBorrowHistory(); // Refresh the list
       alert('Book renewed successfully!');
     } catch (err) {
+      console.error('Renew book error:', err); // For debugging
+      
       let errorMessage = 'Failed to renew book';
-      if (err.response?.data?.message) {
-        errorMessage = err.response.data.message;
+      
+      // Check different error response formats
+      if (err.response?.data) {
+        if (typeof err.response.data === 'string') {
+          // Backend sends plain string (like "Book renewal failed: Already renewed...")
+          errorMessage = err.response.data;
+        } else if (err.response.data.message) {
+          // Backend sends JSON with message property
+          errorMessage = err.response.data.message;
+        } else if (err.response.data.error) {
+          // Backend sends JSON with error property
+          errorMessage = err.response.data.error;
+        }
       } else if (err.message) {
+        // Network or other errors
         errorMessage = err.message;
       }
+      
+      // Extract just the meaningful part of the error message
+      if (errorMessage.includes('Book renewal failed:')) {
+        errorMessage = errorMessage.replace('Book renewal failed: ', '');
+      }
+      
       alert(errorMessage);
     }
   };
@@ -187,6 +221,45 @@ const BorrowHistory = () => {
         <p>Track all your borrowed books and their status</p>
       </div>
 
+      {/* NEW: OVERDUE PREVENTION NOTICE */}
+      {hasOverdueBooks && (
+        <div className="overdue-prevention-notice">
+          <div className="overdue-header">
+            <span className="warning-icon">⚠️</span>
+            <h3 className="overdue-title">
+              Borrowing Restricted - Overdue Books Detected
+            </h3>
+          </div>
+          <p className="overdue-summary">
+            You currently have <strong>{overdueBooks.length}</strong> overdue book{overdueBooks.length > 1 ? 's' : ''}.
+          </p>
+          <p className="overdue-restriction">
+            <strong>You cannot borrow new books until all overdue items are returned.</strong>
+          </p>
+          <div className="overdue-books-section">
+            <strong>Overdue Books:</strong>
+            <ul className="overdue-books-list">
+              {overdueBooks.map(book => (
+                <li key={book.borrowId} className="overdue-book-item">
+                  <strong>{book.bookTitle}</strong> - 
+                  Due: {formatDate(book.dueDate)} 
+                  ({calculateDaysOverdue(book.dueDate)} days overdue)
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="next-steps-section">
+            <strong>📍 Next Steps:</strong>
+            <ol className="next-steps-list">
+              <li>Return all overdue books to their respective libraries</li>
+              <li>Pay any applicable fines</li>
+              <li>Once returned, you can resume borrowing new books</li>
+            </ol>
+          </div>
+        </div>
+      )}
+
+
       {/* Controls */}
       <div className="history-controls">
         <div className="filter-section">
@@ -200,7 +273,9 @@ const BorrowHistory = () => {
             <option value="ALL">All Books</option>
             <option value="ACTIVE">Currently Borrowed</option>
             <option value="RETURNED">Returned Books</option>
-            <option value="OVERDUE">Overdue Books</option>
+            <option value="OVERDUE">
+                Overdue Books {hasOverdueBooks ? `(${overdueBooks.length})` : ''}
+            </option>
           </select>
         </div>
 
@@ -257,9 +332,12 @@ const BorrowHistory = () => {
           </div>
           <div className="stat-label">Books Returned</div>
         </div>
-        <div className="stat-card">
-          <div className="stat-number">
-            {borrowHistory.filter(b => b.status === 'OVERDUE').length}
+  
+        <div className={`stat-card ${hasOverdueBooks ? 'stat-card-warning' : ''}`}>
+          <div className="stat-number" style={{
+            color: hasOverdueBooks ? '#dc3545' : 'inherit'
+          }}>
+            {overdueBooks.length}
           </div>
           <div className="stat-label">Overdue Books</div>
         </div>

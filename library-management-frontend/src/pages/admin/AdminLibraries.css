@@ -58,8 +58,9 @@
 }
 
 .stat-label {
- font-size: 0.9rem;
- opacity: 0.9;
+ font-size: 1.5rem;
+ color: black !important;
+ margin-top: 0.25rem;
 }
 
 .libraries-controls {

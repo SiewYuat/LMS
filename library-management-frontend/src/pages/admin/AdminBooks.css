@@ -167,7 +167,7 @@
   display: flex;
   gap: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid #bac0c5;
 }
 
 .stat {
@@ -184,7 +184,7 @@
 
 .stat-label {
   font-size: 0.8rem;
-  color: #666;
+  color: #0a0a01 !important;
   margin-top: 0.25rem;
 }
 

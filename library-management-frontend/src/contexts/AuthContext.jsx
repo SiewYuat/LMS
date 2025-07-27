@@ -16,28 +16,64 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [loading, setLoading] = useState(true)
 
-  // Check for stored authentication on app load
+  // Initialize auth state from localStorage immediately
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const token = localStorage.getItem('authToken')
-        if (token) {
-          // Verify token with backend
-          const userData = await authService.getCurrentUser()
+    const initializeAuth = () => {
+      const token = localStorage.getItem('authToken')
+      const storedUser = localStorage.getItem('user')
+      
+      if (token && storedUser) {
+        try {
+          const userData = JSON.parse(storedUser)
           setUser(userData)
           setIsAuthenticated(true)
+        } catch (error) {
+          console.error('Error parsing stored user data:', error)
+          localStorage.removeItem('authToken')
+          localStorage.removeItem('user')
         }
-      } catch (error) {
-        console.error('Auth check failed:', error)
-        // Clear invalid token
-        localStorage.removeItem('authToken')
-      } finally {
-        setLoading(false)
+      }
+      setLoading(false)
+    }
+
+    initializeAuth()
+  }, [])
+
+  // Verify authentication with backend (runs after initial state restoration)
+  useEffect(() => {
+    const verifyAuth = async () => {
+      const token = localStorage.getItem('authToken')
+      if (token && isAuthenticated) {
+        try {
+          const userData = await authService.getCurrentUser()
+          
+          // Transform backend response to include userType
+          const enhancedUserData = {
+            ...userData,
+            // Determine userType based on which fields exist
+            userType: userData.memberId ? 'MEMBER' : 'ADMIN',
+            // Ensure consistent ID field
+            id: userData.memberId || userData.adminId
+          }
+          
+          setUser(enhancedUserData)
+          // Update stored user data
+          localStorage.setItem('user', JSON.stringify(enhancedUserData))
+        } catch (error) {
+          console.error('Auth verification failed:', error)
+          // Clear invalid token and user data
+          localStorage.removeItem('authToken')
+          localStorage.removeItem('user')
+          setUser(null)
+          setIsAuthenticated(false)
+        }
       }
     }
 
-    checkAuth()
-  }, [])
+    if (!loading) {
+      verifyAuth()
+    }
+  }, [loading, isAuthenticated])
 
   const login = async (username, password) => {
     try {
@@ -46,13 +82,18 @@ export const AuthProvider = ({ children }) => {
       // Store token
       localStorage.setItem('authToken', response.token)
       
-      // Set user data
+      // Set user data from login response (which has userType)
       const userData = {
         id: response.userId,
         username: response.userName,
         fullName: response.fullName,
-        userType: response.userType
+        userType: response.userType,
+        // Add ID fields for consistency
+        ...(response.userType === 'MEMBER' ? { memberId: response.userId } : { adminId: response.userId })
       }
+      
+      // Store user data in localStorage for quick restoration
+      localStorage.setItem('user', JSON.stringify(userData))
       
       setUser(userData)
       setIsAuthenticated(true)
@@ -82,13 +123,17 @@ export const AuthProvider = ({ children }) => {
     } finally {
       // Clear local storage and state regardless of API response
       localStorage.removeItem('authToken')
+      localStorage.removeItem('user')
       setUser(null)
       setIsAuthenticated(false)
     }
   }
 
   const updateUser = (userData) => {
-    setUser(prevUser => ({ ...prevUser, ...userData }))
+    const updatedUser = { ...user, ...userData }
+    setUser(updatedUser)
+    // Update stored user data
+    localStorage.setItem('user', JSON.stringify(updatedUser))
   }
 
   const value = {

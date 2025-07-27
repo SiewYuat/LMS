@@ -55,6 +55,18 @@ const MemberDashboard = () => {
   }, [user])
 
   const handleReturnBook = async (borrowId) => {
+      // ADD THIS for confirmation dialog:
+      const borrowItem = dashboardData.activeBorrows.find(b => b.borrowId === borrowId)
+      const confirmReturn = window.confirm(
+        `Are you sure you want to return "${borrowItem?.bookTitle || 'this book'}"?\n\n` +
+        `Please make sure you have the physical book with you to return to the library.`
+      )
+
+      if (!confirmReturn) {
+        return
+      }
+
+    
     try {
       await borrowService.returnBook(borrowId)
       // Refresh active borrows

@@ -259,7 +259,7 @@
 
 .modal-header h2 {
   margin: 0;
-  color: #2c5282;
+  color: #527ea9;
 }
 
 .instance-form,
@@ -360,14 +360,14 @@
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #5a67d8;
+  background: #f1f2f8;
   transform: translateY(-1px);
 }
 
 .btn-outline-primary {
-  background: transparent;
-  color: #667eea;
-  border: 1px solid #667eea;
+  background: #1236d6;
+  color: white;
+  border: 1px solid #f7f8fa;
 }
 
 .btn-outline-primary:hover:not(:disabled) {
@@ -377,7 +377,7 @@
 
 .btn-outline-secondary {
   background: transparent;
-  color: #666;
+  color: #f3ecec;
   border: 1px solid #ddd;
 }
 

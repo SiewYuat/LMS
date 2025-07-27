@@ -10,7 +10,7 @@ const BookDetails = () => {
   const { user, isAuthenticated } = useAuth()
   const [book, setBook] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [borrowing, setBorrowing] = useState(false)
+  const [borrowing, setBorrowing] = useState({}) // Changed to object to track individual library borrowing
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -30,7 +30,8 @@ const BookDetails = () => {
     }
   }
 
-  const handleBorrowBook = async () => {
+  // New function to handle borrowing from specific library
+  const handleBorrowFromLibrary = async (instance) => {
     if (!isAuthenticated) {
       navigate('/login')
       return
@@ -41,22 +42,27 @@ const BookDetails = () => {
       return
     }
 
-    try {
-      setBorrowing(true)
-      
-      // Get available instances for this book
-      const availableInstances = await bookService.getAvailableInstances(book.bookId)
-      
-      if (availableInstances.length === 0) {
-        alert('No available copies of this book')
-        return
-      }
+    if (instance.bkStatus !== 'AVAILABLE') {
+      alert('This book copy is not available for borrowing')
+      return
+    }
 
-      // Borrow the first available instance
-      const bookInstanceId = availableInstances[0].bkInstanceId
-      await borrowService.borrowBook(user.id, bookInstanceId)
+    // ADD CONFIRMATION DIALOG BEFORE BORROWING
+    const confirmBorrow = window.confirm(
+      `Are you sure you want to borrow "${book.title}" from ${instance.libraryName}?\n\n` +
+      `This book will be due in 21 days and you will be responsible for returning it on time to the library.`
+    )
+
+    if (!confirmBorrow) {
+      return // User cancelled the borrow operation
+    }
+
+    try {
+      setBorrowing(prev => ({ ...prev, [instance.bkInstanceId]: true }))
       
-      alert('Book borrowed successfully!')
+      await borrowService.borrowBook(user.id, instance.bkInstanceId)
+      
+      alert(`Book borrowed successfully from ${instance.libraryName}!`)
       
       // Refresh book details to update availability
       await fetchBookDetails()
@@ -65,7 +71,7 @@ const BookDetails = () => {
       console.error('Error borrowing book:', error)
       alert('Failed to borrow book: ' + (error.userMessage || error.message))
     } finally {
-      setBorrowing(false)
+      setBorrowing(prev => ({ ...prev, [instance.bkInstanceId]: false }))
     }
   }
 
@@ -191,67 +197,104 @@ const BookDetails = () => {
                 )}
               </div>
 
-              {/* Action Buttons */}
-              <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
-                {isAuthenticated && user?.userType === 'MEMBER' && book.availableCopies > 0 && (
-                  <button 
-                    onClick={handleBorrowBook}
-                    disabled={borrowing}
-                    className={`btn btn-primary btn-lg ${borrowing ? 'loading' : ''}`}
-                  >
-                    {borrowing ? (
-                      <>
-                        <span className="spinner-small"></span>
-                        Borrowing...
-                      </>
-                    ) : (
-                      '📚 Borrow This Book'
-                    )}
-                  </button>
-                )}
+              {/* REMOVED: General "Borrow This Book" button section */}
+              {/* Users must now borrow from specific libraries below */}
 
-                {!isAuthenticated && (
-                  <Link to="/login" className="btn btn-primary btn-lg">
-                    Login to Borrow
-                  </Link>
-                )}
-
-                {isAuthenticated && user?.userType === 'MEMBER' && book.availableCopies === 0 && (
-                  <button className="btn btn-outline btn-lg" disabled>
-                    Not Available
-                  </button>
-                )}
-              </div>
-
-              {/* Library Instances */}
+              {/* Library Instances with Individual Borrow Buttons */}
               {book.instances && book.instances.length > 0 && (
-                <div style={{ marginTop: '40px' }}>
-                  <h3 style={{ marginBottom: '20px' }}>Available Locations</h3>
+                <div style={{ marginTop: '20px' }}>
+                  <h3 style={{ marginBottom: '20px', color: '#333' }}>Available Locations</h3>
                   <div style={{ display: 'grid', gap: '15px' }}>
                     {book.instances.map((instance) => (
                       <div 
                         key={instance.bkInstanceId}
                         style={{
-                          padding: '15px',
+                          padding: '20px',
                           border: '1px solid #e9ecef',
                           borderRadius: '8px',
                           display: 'flex',
                           justifyContent: 'space-between',
-                          alignItems: 'center'
+                          alignItems: 'center',
+                          backgroundColor: instance.bkStatus === 'AVAILABLE' ? '#f8fff8' : '#fff5f5'
                         }}
                       >
-                        <div>
-                          <strong>{instance.libraryName}</strong>
+                        <div style={{ flex: 1 }}>
+                          <strong style={{ fontSize: '1.1rem', color: '#333' }}>
+                            {instance.libraryName}
+                          </strong>
                           <p style={{ margin: '5px 0', color: '#666', fontSize: '0.9rem' }}>
                             Condition: {instance.bkCondition}
                           </p>
                         </div>
-                        <span className={`badge ${instance.bkStatus === 'AVAILABLE' ? 'badge-success' : 'badge-danger'}`}>
-                          {instance.bkStatus}
-                        </span>
+                        
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                          <span className={`badge ${instance.bkStatus === 'AVAILABLE' ? 'badge-success' : 'badge-danger'}`}>
+                            {instance.bkStatus}
+                          </span>
+                          
+                          {/* Individual Library Borrow Button */}
+                          {isAuthenticated && user?.userType === 'MEMBER' && instance.bkStatus === 'AVAILABLE' && (
+                            <button 
+                              onClick={() => handleBorrowFromLibrary(instance)}
+                              disabled={borrowing[instance.bkInstanceId]}
+                              className={`btn btn-primary btn-sm ${borrowing[instance.bkInstanceId] ? 'loading' : ''}`}
+                              style={{ minWidth: '120px' }}
+                            >
+                              {borrowing[instance.bkInstanceId] ? (
+                                <>
+                                  <span className="spinner-small"></span>
+                                  Borrowing...
+                                </>
+                              ) : (
+                                'borrow this book'
+                              )}
+                            </button>
+                          )}
+                          
+                          {!isAuthenticated && instance.bkStatus === 'AVAILABLE' && (
+                            <Link to="/login" className="btn btn-primary btn-sm" style={{ minWidth: '120px' }}>
+                              Login to Borrow
+                            </Link>
+                          )}
+                          
+                          {instance.bkStatus !== 'AVAILABLE' && (
+                            <button className="btn btn-outline btn-sm" disabled style={{ minWidth: '120px' }}>
+                              Not Available
+                            </button>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
+                  
+                  {/* Help message for users */}
+                  {book.availableCopies === 0 && (
+                    <div style={{ 
+                      padding: '15px', 
+                      backgroundColor: '#fff3cd', 
+                      border: '1px solid #ffeaa7', 
+                      borderRadius: '8px',
+                      marginTop: '15px'
+                    }}>
+                      <p style={{ margin: 0, color: '#856404' }}>
+                        📅 All copies are currently borrowed. Check back later or contact the library for availability updates.
+                      </p>
+                    </div>
+                  )}
+                  
+                  {!isAuthenticated && book.availableCopies > 0 && (
+                    <div style={{ 
+                      padding: '15px', 
+                      backgroundColor: '#d1ecf1', 
+                      border: '1px solid #bee5eb', 
+                      borderRadius: '8px',
+                      marginTop: '15px'
+                    }}>
+                      <p style={{ margin: 0, color: '#0c5460' }}>
+                        🔑 Please <Link to="/login" style={{ color: '#0c5460', fontWeight: 'bold' }}>login</Link> to borrow books from specific library locations.
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

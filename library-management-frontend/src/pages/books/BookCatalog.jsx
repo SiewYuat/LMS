@@ -59,6 +59,7 @@ const BookCatalog = () => {
               libraryInstances[instance.libraryId].totalCopies++
               libraryInstances[instance.libraryId].instances.push(instance)
               
+              // Only count instances with "AVAILABLE" status as available
               if (instance.bkStatus === 'AVAILABLE') {
                 libraryInstances[instance.libraryId].availableCopies++
               }
@@ -140,7 +141,7 @@ const BookCatalog = () => {
       })
     }
 
-    // Availability filter
+    // Availability filter - only show books with available copies
     if (showAvailableOnly) {
       filtered = filtered.filter(book => book.availableCopies > 0)
     }
@@ -165,19 +166,18 @@ const BookCatalog = () => {
     }
 
     try {
-      setBorrowing(prev => ({ ...prev, [bookId]: true }))
-      
       const book = books.find(b => b.bookId === bookId)
       if (!book) {
         alert('Book not found')
         return
       }
 
-      // Find available instance from preferred library or any library
+      // Find available instance from preferred library only
       let selectedInstance = null
+      let selectedLibraryName = ''
       
       if (preferredLibraryId) {
-        // Try to find available instance from preferred library first
+        // Only try to find available instance from the specified library
         const preferredLibrary = book.libraryInstances.find(lib => 
           lib.libraryId.toString() === preferredLibraryId.toString()
         )
@@ -186,23 +186,31 @@ const BookCatalog = () => {
           selectedInstance = preferredLibrary.instances.find(instance => 
             instance.bkStatus === 'AVAILABLE'
           )
+          selectedLibraryName = preferredLibrary.libraryName
         }
-      }
-      
-      // If no preferred library or no available copies there, find any available instance
-      if (!selectedInstance) {
-        selectedInstance = book.instances.find(instance => instance.bkStatus === 'AVAILABLE')
       }
 
       if (!selectedInstance) {
-        alert('No available copies of this book at any library')
+        alert('No available copies of this book at the selected library')
         return
       }
+
+      // ADD CONFIRMATION DIALOG BEFORE BORROWING
+      const confirmBorrow = window.confirm(
+        `Are you sure you want to borrow "${book.title}" from ${selectedLibraryName}?\n\n` +
+        `This book will be due in 21 days and you will be responsible for returning it on time to the library.`
+      )
+
+      if (!confirmBorrow) {
+        return // User cancelled the borrow operation
+      }
+
+      setBorrowing(prev => ({ ...prev, [bookId]: true }))
 
       // Borrow the selected instance
       await borrowService.borrowBook(user.id, selectedInstance.bkInstanceId)
       
-      alert(`Book borrowed successfully from ${selectedInstance.libraryName}!`)
+      alert(`Book borrowed successfully from ${selectedLibraryName}!`)
       
       // Refresh books to update availability
       await fetchBooks()
@@ -210,8 +218,21 @@ const BookCatalog = () => {
     } catch (error) {
       console.error('Error borrowing book:', error)
       
-      // Enhanced error messages
+      // // Enhanced error messages
+      // let errorMessage = 'Failed to borrow book'
+      // if (error.response?.data) {
+      //   if (typeof error.response.data === 'string') {
+      //     errorMessage = error.response.data
+      //   } else if (error.response.data.message) {
+      //     errorMessage = error.response.data.message
+      //   }
+      // } else if (error.message) {
+      //   errorMessage = error.message
+      // }
+      // ENHANCED ERROR HANDLING FOR OVERDUE PREVENTION
       let errorMessage = 'Failed to borrow book'
+      let isOverdueError = false
+      
       if (error.response?.data) {
         if (typeof error.response.data === 'string') {
           errorMessage = error.response.data
@@ -222,8 +243,27 @@ const BookCatalog = () => {
         errorMessage = error.message
       }
       
+      // Check if error is due to overdue books
+      if (errorMessage.toLowerCase().includes('overdue') || 
+          errorMessage.toLowerCase().includes('return overdue books')) {
+        isOverdueError = true
+      }
+      
+      // ENHANCED ERROR DISPLAY FOR OVERDUE PREVENTION
+      if (isOverdueError) {
+        const viewHistoryAction = window.confirm(
+          `${errorMessage}\n\nWould you like to view your borrowing history to see which books are overdue?`
+        )
+        
+        if (viewHistoryAction) {
+          alert('Please check "My Books" section in the navigation menu to view your borrowing history.')
+        }
+      } else {
+
+        // Regular error handling for other types of errors      
       alert(errorMessage)
-    } finally {
+      } 
+    }finally {
       setBorrowing(prev => ({ ...prev, [bookId]: false }))
     }
   }
@@ -415,22 +455,8 @@ const BookCatalog = () => {
                       View Details
                     </Link>
                     
-                    {isAuthenticated && user?.userType === 'MEMBER' && book.availableCopies > 0 && (
-                      <button 
-                        onClick={() => handleBorrowBook(book.bookId)}
-                        disabled={borrowing[book.bookId]}
-                        className={`btn btn-primary btn-sm ${borrowing[book.bookId] ? 'loading' : ''}`}
-                      >
-                        {borrowing[book.bookId] ? (
-                          <>
-                            <span className="spinner-small"></span>
-                            Borrowing...
-                          </>
-                        ) : (
-                          'Borrow from Any Library'
-                        )}
-                      </button>
-                    )}
+                    {/* COMPLETELY REMOVED: "Borrow from Any Library" button */}
+                    {/* Users can only borrow from specific libraries above */}
                     
                     {!isAuthenticated && (
                       <Link to="/login" className="btn btn-primary btn-sm">

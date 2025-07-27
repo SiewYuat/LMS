@@ -26,6 +26,19 @@ const AdminMembers = () => {
   });
   const [createLoading, setCreateLoading] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
+  const [showEditMember, setShowEditMember] = useState(false);
+  const [editMemberData, setEditMemberData] = useState({
+    memberId: '',
+    firstName: '',
+    lastName: '',
+    userName: '',
+    email: '',
+    phone: '',
+    memberStatus: ''
+  });
+  const [editLoading, setEditLoading] = useState(false);
+  const [editValidationErrors, setEditValidationErrors] = useState({});
+    
   const { user } = useAuth();
 
   useEffect(() => {
@@ -118,6 +131,69 @@ const AdminMembers = () => {
       }));
     }
   };
+
+  const handleEditMember = async (e) => {
+    e.preventDefault();
+    setEditValidationErrors({});
+    
+    const errors = {};
+    if (!editMemberData.firstName.trim()) errors.firstName = 'First name is required';
+    if (!editMemberData.lastName.trim()) errors.lastName = 'Last name is required';
+    if (!editMemberData.userName.trim()) errors.userName = 'Username is required';
+    if (!editMemberData.email.trim()) errors.email = 'Email is required';
+    if (!editMemberData.memberStatus.trim()) errors.memberStatus = 'Status is required';
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (editMemberData.email && !emailRegex.test(editMemberData.email)) {
+      errors.email = 'Please enter a valid email address';
+    }
+    
+    if (Object.keys(errors).length > 0) {
+      setEditValidationErrors(errors);
+      return;
+    }
+
+    try {
+      setEditLoading(true);
+      await memberService.updateMember(editMemberData.memberId, editMemberData);
+      setShowEditMember(false);
+      await fetchMembers();
+      alert('Member updated successfully!');
+    } catch (err) {
+      if (err.message.includes('Username') && err.message.includes('already taken')) {
+        setEditValidationErrors({ userName: 'Username is already taken' });
+      } else if (err.message.includes('Email') && err.message.includes('already registered')) {
+        setEditValidationErrors({ email: 'Email is already registered' });
+      } else {
+        setEditValidationErrors({ general: 'Failed to update member: ' + err.message });
+      }
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const openEditMemberModal = (member) => {
+    setEditMemberData({
+      memberId: member.memberId,
+      firstName: member.firstName,
+      lastName: member.lastName,
+      userName: member.userName,
+      email: member.email,
+      phone: member.phone || '',
+      memberStatus: member.memberStatus
+    });
+    setEditValidationErrors({});
+    setShowEditMember(true);
+  };
+
+  const handleEditInputChange = (e) => {
+    const { name, value } = e.target;
+    setEditMemberData(prev => ({ ...prev, [name]: value }));
+    if (editValidationErrors[name]) {
+      setEditValidationErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
 
   const handleApproveMember = async (memberId) => {
     try {
@@ -410,6 +486,15 @@ const AdminMembers = () => {
                   View
                 </button>
 
+                <button
+                  onClick={() => openEditMemberModal(member)}
+                  className="btn btn-sm btn-primary"
+                  title="Edit member"
+                >
+                  <i className="fas fa-edit"></i>
+                  Edit
+                </button>  
+
                 {member.memberStatus === 'PENDING' && (
                   <button
                     onClick={() => handleApproveMember(member.memberId)}
@@ -606,6 +691,86 @@ const AdminMembers = () => {
           </div>
         </div>
       )}
+
+       {/* Member EDIT Modal */}
+      {showEditMember && (
+            <div className="modal-overlay" onClick={() => setShowEditMember(false)}>
+              <div className="modal-content edit-member-modal" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-header">
+                  <h2>Edit Member</h2>
+                  <button onClick={() => setShowEditMember(false)} className="btn btn-sm btn-outline-secondary" disabled={editLoading}>
+                    <i className="fas fa-times"></i>
+                  </button>
+                </div>
+                
+                <div className="modal-body">
+                  {editValidationErrors.general && (
+                    <div className="error-message mb-3">{editValidationErrors.general}</div>
+                  )}
+                  
+                  <form onSubmit={handleEditMember} className="edit-member-form">
+                    <div className="form-group">
+                      <label htmlFor="editMemberId">Member ID</label>
+                      <input type="text" id="editMemberId" value={`#${editMemberData.memberId}`} className="form-input" disabled style={{ backgroundColor: '#f5f5f5' }} />
+                    </div>
+
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label htmlFor="editFirstName">First Name *</label>
+                        <input type="text" id="editFirstName" name="firstName" value={editMemberData.firstName} onChange={handleEditInputChange} className={`form-input ${editValidationErrors.firstName ? 'error' : ''}`} placeholder="Enter first name" disabled={editLoading} />
+                        {editValidationErrors.firstName && <span className="error-text">{editValidationErrors.firstName}</span>}
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="editLastName">Last Name *</label>
+                        <input type="text" id="editLastName" name="lastName" value={editMemberData.lastName} onChange={handleEditInputChange} className={`form-input ${editValidationErrors.lastName ? 'error' : ''}`} placeholder="Enter last name" disabled={editLoading} />
+                        {editValidationErrors.lastName && <span className="error-text">{editValidationErrors.lastName}</span>}
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="editUserName">Username *</label>
+                      <input type="text" id="editUserName" name="userName" value={editMemberData.userName} onChange={handleEditInputChange} className={`form-input ${editValidationErrors.userName ? 'error' : ''}`} placeholder="Enter username" disabled={editLoading} />
+                      {editValidationErrors.userName && <span className="error-text">{editValidationErrors.userName}</span>}
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="editEmail">Email Address *</label>
+                      <input type="email" id="editEmail" name="email" value={editMemberData.email} onChange={handleEditInputChange} className={`form-input ${editValidationErrors.email ? 'error' : ''}`} placeholder="Enter email address" disabled={editLoading} />
+                      {editValidationErrors.email && <span className="error-text">{editValidationErrors.email}</span>}
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="editPhone">Phone Number</label>
+                      <input type="tel" id="editPhone" name="phone" value={editMemberData.phone} onChange={handleEditInputChange} className="form-input" placeholder="Enter phone number (optional)" disabled={editLoading} />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="editMemberStatus">Member Status *</label>
+                      <select id="editMemberStatus" name="memberStatus" value={editMemberData.memberStatus} onChange={handleEditInputChange} className={`form-select ${editValidationErrors.memberStatus ? 'error' : ''}`} disabled={editLoading}>
+                        <option value="">Select Status</option>
+                        <option value="ACTIVE">Active</option>
+                        <option value="PENDING">Pending</option>
+                        <option value="SUSPENDED">Suspended</option>
+                        <option value="INACTIVE">Inactive</option>
+                      </select>
+                      {editValidationErrors.memberStatus && <span className="error-text">{editValidationErrors.memberStatus}</span>}
+                    </div>
+
+                    <div className="form-note">
+                      <p><strong>Note:</strong> As an admin, you can modify all member fields including status and username.</p>
+                    </div>
+
+                    <div className="form-actions">
+                      <button type="button" onClick={() => setShowEditMember(false)} className="btn btn-outline-secondary" disabled={editLoading}>Cancel</button>
+                      <button type="submit" className="btn btn-primary" disabled={editLoading}>
+                        {editLoading ? (<><i className="fas fa-spinner fa-spin"></i> Updating...</>) : (<><i className="fas fa-save"></i> Update Member</>)}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          )}
 
       {/* Member Details Modal */}
       {showMemberDetails && selectedMember && (

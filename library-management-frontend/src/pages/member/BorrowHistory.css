@@ -333,3 +333,124 @@
     gap: 0.25rem;
   }
 }
+
+/* =================================================================== */
+/* OVERDUE PREVENTION STYLES - ADDED FOR OVERDUE BOOK RESTRICTIONS   */
+/* =================================================================== */
+
+/* Overdue Prevention Notice Styles */
+.overdue-prevention-notice {
+  background-color: #f8d7da;
+  border: 2px solid #dc3545;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 20px 0;
+  color: #721c24;
+  animation: fadeIn 0.5s ease-in;
+}
+
+.overdue-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.warning-icon {
+  font-size: 24px;
+  margin-right: 10px;
+}
+
+.overdue-title {
+  margin: 0;
+  color: #dc3545;
+}
+
+.overdue-summary {
+  margin: 10px 0;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.overdue-restriction {
+  margin: 10px 0;
+}
+
+.overdue-books-section {
+  margin-top: 15px;
+}
+
+.overdue-books-list {
+  margin-top: 5px;
+  padding-left: 20px;
+}
+
+.overdue-book-item {
+  margin: 5px 0;
+}
+
+.next-steps-section {
+  margin-top: 15px;
+  padding: 10px;
+  background-color: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 4px;
+}
+
+.next-steps-list {
+  margin-top: 5px;
+  padding-left: 20px;
+}
+
+/* Animation for smooth appearance */
+@keyframes fadeIn {
+  from { 
+    opacity: 0; 
+    transform: translateY(-10px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+/* Enhanced overdue item styling */
+.history-item-overdue {
+  border-left: 5px solid #dc3545 !important;
+  background-color: #fff5f5;
+}
+
+.overdue-date {
+  color: #dc3545 !important;
+  font-weight: bold !important;
+}
+
+/* Warning stat card for overdue books */
+.stat-card-warning {
+  border: 2px solid #dc3545;
+  background-color: #fff5f5;
+}
+
+.stat-card-warning .stat-number {
+  color: #dc3545;
+  font-weight: bold;
+}
+
+/* Enhanced overdue status badge */
+.status-overdue {
+  background-color: #dc3545 !important;
+  color: white !important;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+}
+
+/* Filter dropdown enhancement for overdue count */
+select option[value="OVERDUE"] {
+  background-color: #fff5f5;
+  color: #dc3545;
+  font-weight: bold;
+}
